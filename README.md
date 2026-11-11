@@ -49,8 +49,8 @@ A high-efficiency production tracking and workflow system designed for industria
 
 ### 1. Clone & Navigate
 ```bash
-git clone https://github.com/sreevasaa-project/Fullstack.git
-cd Fullstack/printech-app
+git clone https://github.com/sreevasaa-project/python-backend.git
+cd python-backend/printech-app
 ```
 
 ### 2. Install Dependencies
