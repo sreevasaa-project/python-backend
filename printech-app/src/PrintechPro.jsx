@@ -173,7 +173,7 @@ function OperatorPage({ state, setState, onSync }) {
 
   const now = () => new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
-  const [cdAuthDone, setQrAuthDone] = useState(false);
+  const [qrAuthDone, setQrAuthDone] = useState(false);
   const [qrJobDone, setQrJobDone] = useState(false);
   const [externalScanValue, setExternalScanValue] = useState("");
   const employeeInputRef = useRef(null);
@@ -279,11 +279,8 @@ function OperatorPage({ state, setState, onSync }) {
         setQrAuthDone(true);
         setTimeout(() => update({ step: 2 }), 300);
       }
-      // Parse job card QR code (format: 6-8 digit number)
-      else if (step === 2 && /^\d{5,12}$/.test(data)) {
-        update({ jobLookupNumber: data, jobCard: data, scannerActive: false, scanError: "" });
-        setQrJobDone(true);
-      else if (step === 2 && JOB_REGEX.test(data)) {
+      // Parse job card QR code (format: 5-12 digit number)
+      else if (step === 2 && (/^\d{5,12}$/.test(data) || JOB_REGEX.test(data))) {
         update({ jobLookupNumber: data, jobCard: data, scannerActive: false, scanError: "" });
         setQrJobDone(true);
         // Auto-fetch after QR scan
@@ -299,7 +296,7 @@ function OperatorPage({ state, setState, onSync }) {
 
   const handleJobLookup = async (overrideNumber) => {
     const jcn = overrideNumber || (authMode === "id" ? jobLookupNumber : jobCard);
-    if (!jcn || jcn.length !== 6) return;
+    if (!jcn || !/^\d{5,12}$/.test(jcn)) return;
 
     update({ loading: true, error: "" });
     try {
@@ -446,10 +443,16 @@ function OperatorPage({ state, setState, onSync }) {
                   <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                       <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, letterSpacing: 0.8, fontFamily: "'DM Mono',monospace" }}>EMPLOYEE ID</label>
-                      <input ref={employeeInputRef} value={empId} onChange={e => update({ empId: e.target.value.toUpperCase() })} placeholder="e.g. EMP0033"
+                      <input id="operator-emp-input" ref={employeeInputRef} value={empId} onChange={e => update({ empId: e.target.value.toUpperCase() })} placeholder="Ready to scan..."
+                        onBlur={() => stickyFocus(employeeInputRef)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && empId.toUpperCase().startsWith("EMP") && empId.length >= 4) {
+                            localStorage.setItem("printech_emp_id", empId.toUpperCase());
+                            update({ step: 2 });
+                          }
+                        }}
                         style={{ border: `1.5px solid ${C.border}`, borderRadius: 10, padding: "14px 16px", fontSize: 16, fontFamily: "'DM Mono',monospace", color: C.text, background: C.white, outline: "none", transition: "border 0.2s", width: "100%" }}
                         onFocus={e => e.target.style.border = `1.5px solid ${C.accent}`}
-                        onBlur={e => e.target.style.border = `1.5px solid ${C.border}`}
                       />
                     </div>
                   </div>
@@ -514,24 +517,8 @@ function OperatorPage({ state, setState, onSync }) {
                         </div>
                       </div>
                     )}
-                <div style={{ fontSize: 12, color: C.muted, marginBottom: 24 }}>Scan your employee badge to begin</div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, letterSpacing: 0.8, fontFamily: "'DM Mono',monospace" }}>EMPLOYEE ID</label>
-                    <input id="operator-emp-input" ref={employeeInputRef} value={empId} onChange={e => update({ empId: e.target.value.toUpperCase() })} placeholder="Ready to scan..."
-                      onBlur={() => stickyFocus(employeeInputRef)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && empId.toUpperCase().startsWith("EMP") && empId.length >= 4) {
-                          localStorage.setItem("printech_emp_id", empId.toUpperCase());
-                          update({ step: 2 });
-                        }
-                      }}
-                      style={{ border: `1.5px solid ${C.border}`, borderRadius: 10, padding: "14px 16px", fontSize: 16, fontFamily: "'DM Mono',monospace", color: C.text, background: C.white, outline: "none", transition: "border 0.2s", width: "100%" }}
-                      onFocus={e => e.target.style.border = `1.5px solid ${C.accent}`}
-                    />
                   </div>
-                </div>
+                )}
 
                 <button
                   onClick={() => {
@@ -573,10 +560,15 @@ function OperatorPage({ state, setState, onSync }) {
                   <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                       <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, letterSpacing: 0.8, fontFamily: "'DM Mono',monospace" }}>JOB CARD NUMBER</label>
-                      <input ref={jobInputRef} value={jobLookupNumber} onChange={e => update({ jobLookupNumber: e.target.value })} placeholder="e.g. 260099"
+                      <input id="operator-job-input" ref={jobInputRef} value={jobLookupNumber} onChange={e => update({ jobLookupNumber: e.target.value })} placeholder="Ready to scan..."
+                        onBlur={() => stickyFocus(jobInputRef)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && /^\d{5,12}$/.test(jobLookupNumber)) {
+                            handleJobLookup();
+                          }
+                        }}
                         style={{ border: `1.5px solid ${C.border}`, borderRadius: 10, padding: "14px 16px", fontSize: 16, fontFamily: "'DM Mono',monospace", color: C.text, background: C.white, outline: "none", transition: "border 0.2s", width: "100%" }}
                         onFocus={e => e.target.style.border = `1.5px solid ${C.accent}`}
-                        onBlur={e => e.target.style.border = `1.5px solid ${C.border}`}
                       />
                     </div>
                   </div>
@@ -631,15 +623,7 @@ function OperatorPage({ state, setState, onSync }) {
                         </div>
                         <div style={{ borderRadius: 10, overflow: "hidden", background: "#000", height: 320, position: 'relative' }}>
                           <Scanner
-                            onScan={(res) => {
-                              if (res?.[0]) {
-                                const data = res[0].rawValue;
-                                if (/^\d{5,8}$/.test(data)) {
-                                  update({ jobLookupNumber: data, jobCard: data, scannerActive: false });
-                                  setQrJobDone(true);
-                                }
-                              }
-                            }}
+                            onScan={handleQRScan}
                             onError={handleScanError}
                             styles={{
                               container: { width: '100%', height: '100%' },
@@ -649,23 +633,8 @@ function OperatorPage({ state, setState, onSync }) {
                         </div>
                       </div>
                     )}
-                <div style={{ fontSize: 12, color: C.muted, marginBottom: 24 }}>Scan your Job Card now</div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, letterSpacing: 0.8, fontFamily: "'DM Mono',monospace" }}>JOB CARD NUMBER</label>
-                    <input id="operator-job-input" ref={jobInputRef} value={jobLookupNumber} onChange={e => update({ jobLookupNumber: e.target.value })} placeholder="Ready to scan..."
-                      onBlur={() => stickyFocus(jobInputRef)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && jobLookupNumber.length === 6) {
-                          handleJobLookup();
-                        }
-                      }}
-                      style={{ border: `1.5px solid ${C.border}`, borderRadius: 10, padding: "14px 16px", fontSize: 16, fontFamily: "'DM Mono',monospace", color: C.text, background: C.white, outline: "none", transition: "border 0.2s", width: "100%" }}
-                      onFocus={e => e.target.style.border = `1.5px solid ${C.accent}`}
-                    />
                   </div>
-                </div>
+                )}
 
                 <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
                   <button onClick={() => update({ step: 1 })} style={{ padding: "12px 20px", borderRadius: 10, border: `1.5px solid ${C.border}`, background: C.white, color: C.muted, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>← Back</button>
@@ -845,19 +814,12 @@ function OperatorPage({ state, setState, onSync }) {
                             data = JSON.parse(rawText);
                           } catch {
                             data = null;
-                            const text = await res.text();
-                            console.log("Status update response:", text);
-                            // Even if we fail to parse JSON, if it's 200 OK, we count it as success
-                            update({ step: 5, loading: false });
-                            onSync(true);
-                          } catch (e) {
-                            update({ step: 5, loading: false });
-                            onSync(true);
                           }
                         }
 
-                        if (res.ok && data?.status === 1) {
+                        if ((data?.status === 1) || (!data && res.ok)) {
                           update({ step: 5, loading: false });
+                          onSync(true);
                         } else {
                           const backendMessage =
                             data?.msg ||
@@ -870,17 +832,11 @@ function OperatorPage({ state, setState, onSync }) {
                             request: Object.fromEntries(formData.entries())
                           });
                           update({ error: backendMessage || "Failed to update status", loading: false });
+                          onSync(false);
                         }
                       } catch (err) {
-                        update({ error: err?.message || "Failed to update status", loading: false });
-                        const errorText = await res.text();
-                        console.error("Status update error response:", errorText);
-                        update({ error: `Server error (${res.status}). Check console.`, loading: false });
-                        onSync(true);
-
-                      } catch (err) {
                         console.error("Status update execution error:", err);
-                        update({ error: "Connection error: " + err.message, loading: false });
+                        update({ error: "Connection error: " + (err?.message || "Failed to update status"), loading: false });
                         onSync(false);
                       }
                     }}
