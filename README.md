@@ -50,7 +50,7 @@ A high-efficiency production tracking and workflow system designed for industria
 ### 1. Clone & Navigate
 ```bash
 git clone https://github.com/sreevasaa-project/python-backend.git
-cd python-backend/printech-app
+cd python-backend
 ```
 
 ### 2. Install Dependencies
@@ -68,7 +68,7 @@ Open **`http://localhost:5173`** in your browser.
 ```bash
 npm run build
 ```
-Generates an optimized, production-ready build in `printech-app/dist/`.
+Generates an optimized, production-ready build in `dist/`.
 
 ---
 
@@ -87,7 +87,7 @@ window.PRINTECH_DEV_MODE = false; // Live production writes (Default)
 ## 📁 Project Structure
 
 ```
-printech-app/
+python-backend/
 ├── public/
 │   └── vassa-logo.png         # Company branding asset
 ├── src/
